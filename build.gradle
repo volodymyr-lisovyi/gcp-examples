@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+}
+
+group 'com.les'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform('com.google.cloud:libraries-bom:20.4.0')
+    implementation 'com.google.cloud:google-cloud-pubsub'
+    implementation 'com.google.cloud:google-cloud-bigquery'
+
+    implementation 'com.google.api-client:google-api-client'
+    implementation 'com.google.apis:google-api-services-bigquery'
+    implementation 'com.google.http-client:google-http-client'
+    implementation 'com.google.apis:google-api-services-pubsub'
+
+
+
+    implementation 'org.apache.beam:beam-sdks-java-core:2.29.0'
+    implementation 'org.apache.beam:beam-sdks-java-io-google-cloud-platform:2.29.0'
+    implementation 'org.apache.beam:beam-runners-google-cloud-dataflow-java:2.29.0'
+    runtimeOnly 'org.apache.beam:beam-runners-direct-java:2.29.0'
+    runtimeOnly 'org.apache.beam:beam-runners-portability-java:2.29.0'
+
+    implementation 'joda-time:joda-time:2.10.10'
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation 'org.hamcrest:hamcrest-core:2.1'
+    implementation 'org.hamcrest:hamcrest-library:2.1'
+    implementation 'junit:junit:4.13.1'
+    runtimeOnly 'org.slf4j:slf4j-jdk14:1.7.30'
+
+    testImplementation 'org.mockito:mockito-core:3.7.7'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+// Used to execute pipeline
+task execute (type:JavaExec) {
+    main = System.getProperty("mainClass")
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperties System.getProperties()
+    args System.getProperty("exec.args", "").split()
+}
+
+test {
+    useJUnitPlatform()
+}
