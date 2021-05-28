@@ -11,10 +11,10 @@ import java.util.Map;
 public class BigQueryExample {
 
     public static void main(String[] args) throws Exception {
-        String projectId = "<project-id>";
-        String pathToCredentials = "<path-to-credentials>";
-        String datasetId = "<dataset-id>";
-        String table = "<table-id>";
+        String projectId = System.getenv("GCP_EXAMPLES_PROJECT_ID");
+        String datasetId = System.getenv("GCP_EXAMPLES_DATASET_ID");
+        String table = System.getenv("GCP_EXAMPLES_TABLE_ID");
+        String pathToCredentials = System.getenv("GCP_CREDENTIALS");
 
         // Create a service instance
         BigQuery bigquery = BigQueryOptions.newBuilder()

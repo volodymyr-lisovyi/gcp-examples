@@ -1,5 +1,15 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.16'
+    }
+}
+
 plugins {
-    id 'java'
+    id "java"
+    id "com.google.protobuf" version "0.8.16"
 }
 
 group 'com.les'
@@ -19,7 +29,7 @@ dependencies {
     implementation 'com.google.http-client:google-http-client'
     implementation 'com.google.apis:google-api-services-pubsub'
 
-
+    implementation "com.google.protobuf:protobuf-java"
 
     implementation 'org.apache.beam:beam-sdks-java-core:2.29.0'
     implementation 'org.apache.beam:beam-sdks-java-io-google-cloud-platform:2.29.0'
@@ -39,6 +49,22 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
+sourceSets {
+    main {
+        proto {
+            srcDir 'src/main/protobuf'
+        }
+        java {
+            srcDirs 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java'
+        }
+    }
+}
+
+task cleanProto(type: Delete) {
+    delete 'gen-src'
+}
+
+
 // Used to execute pipeline
 task execute (type:JavaExec) {
     main = System.getProperty("mainClass")
@@ -50,3 +76,5 @@ task execute (type:JavaExec) {
 test {
     useJUnitPlatform()
 }
+
+//clean.dependsOn cleanProto
