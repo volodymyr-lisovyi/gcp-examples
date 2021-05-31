@@ -14,19 +14,23 @@
  * the License.
  */
 
-package com.les.protobuf;
+package com.les.avro;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
@@ -40,6 +44,8 @@ import static com.les.model.UserMessageOuterClass.UserMessage;
  * ./gradlew clean execute -DmainClass=com.les.protobuf.PubSubProtobufToBigQuery  -Dexec.args="--project=gcp-bigdata-313810 --inputSubscription=projects/gcp-bigdata-313810/subscriptions/user-messages-sub --outputTableSpec=gcp-bigdata-313810:order_events_dataset.user_messages  --runner=DataflowRunner --region=us-central1"
  */
 public class PubSubProtobufToBigQuery {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PubSubProtobufToBigQuery.class);
 
     /**
      * The {@link Options} class provides the custom execution options passed by the executor at the
@@ -93,8 +99,22 @@ public class PubSubProtobufToBigQuery {
         pipeline
                 .apply(
                         "Read from pubsub subscription",
-                        PubsubIO.readProtos(UserMessage.class)
+                        PubsubIO.readMessagesWithAttributes()
                                 .fromSubscription(options.getInputSubscription())
+                )
+                .apply(
+                        "Transform PubsubMessage to UserMessage",
+                        MapElements.via(new SimpleFunction<PubsubMessage, UserMessage>() {
+                            @Override
+                            public UserMessage apply(PubsubMessage pubsubMessage) {
+                                try {
+                                    return UserMessage.parseFrom(pubsubMessage.getPayload());
+                                } catch (InvalidProtocolBufferException e) {
+                                    LOG.error("{}", e.getMessage());
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        })
                 )
                 .apply(
                         "Transform UserMessage to TableRow",
