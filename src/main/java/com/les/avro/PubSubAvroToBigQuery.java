@@ -17,35 +17,28 @@
 package com.les.avro;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.les.model.UserMessage;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SimpleFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
-import static com.les.model.UserMessageOuterClass.UserMessage;
-
 /**
  * To run locally
- * ./gradlew clean execute -DmainClass=com.les.protobuf.PubSubProtobufToBigQuery  -Dexec.args="--project=gcp-bigdata-313810 --inputSubscription=projects/gcp-bigdata-313810/subscriptions/user-messages-sub --outputTableSpec=gcp-bigdata-313810:order_events_dataset.user_messages  --runner=DirectRunner --region=us-central1"
+ * ./gradlew clean execute -DmainClass=com.les.avro.PubSubAvroToBigQuery  -Dexec.args="--project=gcp-bigdata-313810 --inputTopic=projects/gcp-bigdata-313810/topics/user-messages-avro --outputTableSpec=gcp-bigdata-313810:order_events_dataset.user_messages  --runner=DirectRunner --region=us-central1"
  * <p>
  * To create dataflow job on GCP
- * ./gradlew clean execute -DmainClass=com.les.protobuf.PubSubProtobufToBigQuery  -Dexec.args="--project=gcp-bigdata-313810 --inputSubscription=projects/gcp-bigdata-313810/subscriptions/user-messages-sub --outputTableSpec=gcp-bigdata-313810:order_events_dataset.user_messages  --runner=DataflowRunner --region=us-central1"
+ * ./gradlew clean execute -DmainClass=com.les.avro.PubSubAvroToBigQuery  -Dexec.args="--project=gcp-bigdata-313810 --inputTopic=projects/gcp-bigdata-313810/topics/user-messages-avro --outputTableSpec=gcp-bigdata-313810:order_events_dataset.user_messages  --runner=DataflowRunner --region=us-central1"
  */
-public class PubSubProtobufToBigQuery {
-
-    private static final Logger LOG = LoggerFactory.getLogger(PubSubProtobufToBigQuery.class);
+public class PubSubAvroToBigQuery {
 
     /**
      * The {@link Options} class provides the custom execution options passed by the executor at the
@@ -58,18 +51,16 @@ public class PubSubProtobufToBigQuery {
         void setOutputTableSpec(ValueProvider<String> value);
 
         @Description(
-                "The Cloud Pub/Sub subscription to consume from. "
-                        + "The name should be in the format of "
-                        + "projects/<project-id>/subscriptions/<subscription-name>.")
-        ValueProvider<String> getInputSubscription();
+                "The Cloud Pub/Sub topic to consume from.")
+        ValueProvider<String> getInputTopic();
 
-        void setInputSubscription(ValueProvider<String> value);
+        void setInputTopic(ValueProvider<String> value);
     }
 
     /**
      * The main entry-point for pipeline execution. This method will start the pipeline but will not
      * wait for it's execution to finish. If blocking execution is required, use the {@link
-     * PubSubProtobufToBigQuery#run(Options)} method to start the pipeline and invoke {@code
+     * PubSubAvroToBigQuery#run(Options)} method to start the pipeline and invoke {@code
      * result.waitUntilFinish()} on the {@link PipelineResult}.
      *
      * @param args The command-line args passed by the executor.
@@ -91,6 +82,8 @@ public class PubSubProtobufToBigQuery {
      */
     public static PipelineResult run(Options options) {
 
+        // Prepare avro reader
+
         /*
          * Step #1: Read messages in from Pub/Sub Subscription
          */
@@ -99,22 +92,8 @@ public class PubSubProtobufToBigQuery {
         pipeline
                 .apply(
                         "Read from pubsub subscription",
-                        PubsubIO.readMessagesWithAttributes()
-                                .fromSubscription(options.getInputSubscription())
-                )
-                .apply(
-                        "Transform PubsubMessage to UserMessage",
-                        MapElements.via(new SimpleFunction<PubsubMessage, UserMessage>() {
-                            @Override
-                            public UserMessage apply(PubsubMessage pubsubMessage) {
-                                try {
-                                    return UserMessage.parseFrom(pubsubMessage.getPayload());
-                                } catch (InvalidProtocolBufferException e) {
-                                    LOG.error("{}", e.getMessage());
-                                    throw new RuntimeException(e);
-                                }
-                            }
-                        })
+                        PubsubIO.readAvros(UserMessage.class)
+                                .fromTopic(options.getInputTopic())
                 )
                 .apply(
                         "Transform UserMessage to TableRow",

@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 
-public class PubSubProtobufExample {
+public class PubSubAvroExample {
 
     public static void main(String[] args) throws Exception {
         String projectId = System.getenv("GCP_EXAMPLES_PROJECT_ID");
@@ -47,13 +47,13 @@ public class PubSubProtobufExample {
 
             UserMessage userMessage = UserMessage.newBuilder()
                     .setId(UUID.randomUUID().toString())
-                    .setFirstName("first_name")
-                    .setLastName("last_name")
+                    .setFirstName("Avro")
+                    .setLastName("Example")
                     .build();
 
             // Encode the object and write it to the output stream.
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            Encoder encoder = EncoderFactory.get().binaryEncoder(byteArrayOutputStream, null);
+            Encoder encoder = EncoderFactory.get().directBinaryEncoder(byteArrayOutputStream, null);
             userMessage.customEncode(encoder);
             encoder.flush();
 

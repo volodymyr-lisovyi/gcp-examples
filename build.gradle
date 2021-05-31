@@ -10,6 +10,7 @@ buildscript {
 plugins {
     id "java"
     id "com.google.protobuf" version "0.8.16"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.2.0"
 }
 
 group 'com.les'
@@ -30,6 +31,8 @@ dependencies {
     implementation 'com.google.apis:google-api-services-pubsub'
 
     implementation "com.google.protobuf:protobuf-java"
+
+    implementation "org.apache.avro:avro:1.10.2"
 
     implementation 'org.apache.beam:beam-sdks-java-core:2.29.0'
     implementation 'org.apache.beam:beam-sdks-java-io-google-cloud-platform:2.29.0'
@@ -60,11 +63,6 @@ sourceSets {
     }
 }
 
-task cleanProto(type: Delete) {
-    delete 'gen-src'
-}
-
-
 // Used to execute pipeline
 task execute (type:JavaExec) {
     main = System.getProperty("mainClass")
@@ -76,5 +74,3 @@ task execute (type:JavaExec) {
 test {
     useJUnitPlatform()
 }
-
-//clean.dependsOn cleanProto
